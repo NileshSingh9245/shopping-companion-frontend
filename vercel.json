@@ -19,15 +19,5 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ],
-  "env": {
-    "VITE_API_URL": "@api_url",
-    "VITE_APP_ENV": "production"
-  },
-  "build": {
-    "env": {
-      "VITE_API_URL": "@api_url",
-      "VITE_APP_ENV": "production"
-    }
-  }
+  ]
 }
