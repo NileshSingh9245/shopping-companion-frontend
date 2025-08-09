@@ -268,37 +268,40 @@ const Footer = () => {
             
             {/* Contact Info */}
             <VStack align="start" spacing={2}>
+              <Text fontSize="sm" fontWeight="semibold" color="brand.500">
+                🚀 Created by Developer
+              </Text>
               <HStack>
                 <Box as={FiMapPin} color="brand.500" />
                 <Text fontSize="sm">
-                  123 Tech Park, Sarvanampatti, Coimbatore - 641035, Tamil Nadu, India
+                  Coimbatore, Tamil Nadu, India
                 </Text>
               </HStack>
               <HStack>
                 <Box as={FiPhone} color="brand.500" />
                 <VStack align="start" spacing={0}>
-                  <Link href="tel:+919876543210" fontSize="sm">
-                    +91 98765 43210 (Customer Support)
+                  <Link href="tel:+916200759921" fontSize="sm">
+                    +91 6200759921 (Nilesh Kumar Singh)
                   </Link>
-                  <Link href="tel:+919876543211" fontSize="sm">
-                    +91 98765 43211 (Business Inquiries)
-                  </Link>
+                  <Text fontSize="xs" color="gray.500">
+                    For suggestions & collaboration
+                  </Text>
                 </VStack>
               </HStack>
               <HStack>
                 <Box as={FiMail} color="brand.500" />
                 <VStack align="start" spacing={0}>
-                  <Link href="mailto:support@shoppingcompanion.com" fontSize="sm">
-                    support@shoppingcompanion.com
+                  <Link href="mailto:nileshkumarsingh9245@gmail.com" fontSize="sm">
+                    nileshkumarsingh9245@gmail.com
                   </Link>
-                  <Link href="mailto:business@shoppingcompanion.com" fontSize="sm">
-                    business@shoppingcompanion.com
-                  </Link>
+                  <Text fontSize="xs" color="gray.500">
+                    App Creator & Full-Stack Developer
+                  </Text>
                 </VStack>
               </HStack>
               <HStack>
                 <Box as={FiClock} color="brand.500" />
-                <Text fontSize="sm">24/7 Support Available | Mon-Fri 9AM-8PM for Business</Text>
+                <Text fontSize="sm">Available for custom development projects</Text>
               </HStack>
             </VStack>
 

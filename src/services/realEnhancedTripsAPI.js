@@ -85,11 +85,86 @@ class RealEnhancedTripsAPI {
 
       const enhancedTrips = [
         {
+          id: 'showcase-trip-1',
+          title: 'Tech Shopping & App Development Showcase',
+          description: '🚀 Join me for a tech-focused shopping trip! As the creator of Shopping Companion, I\'ll showcase the app\'s features while we explore electronics stores, tech gadgets, and dev accessories. Perfect opportunity to see the app in action and get tips from the developer himself!',
+          organizer: {
+            id: 2,
+            name: 'Nilesh Kumar Singh',
+            email: 'nileshkumarsingh9245@gmail.com',
+            avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+            rating: 5.0,
+            completedTrips: 25,
+            verified: true,
+            badges: ['App Creator', 'Tech Expert', 'Featured User']
+          },
+          targetStores: [
+            { id: 'store-1', name: 'Reliance Digital Sarvanampatti', category: 'electronics', rating: 4.3 },
+            { id: 'store-2', name: 'Croma Electronics', category: 'electronics', rating: 4.4 },
+            { id: 'store-3', name: 'Vijay Sales', category: 'electronics', rating: 4.2 },
+            { id: 'store-4', name: 'Tech Plaza', category: 'computer', rating: 4.5 }
+          ],
+          scheduledDate: tomorrow.toISOString(),
+          estimatedDuration: 5,
+          maxParticipants: 8,
+          currentParticipants: 6,
+          participants: [
+            { id: 2, name: 'Nilesh Kumar Singh', role: 'organizer', joinedAt: now.toISOString(), avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face' },
+            { id: 3, name: 'Priya Sharma', role: 'participant', joinedAt: now.toISOString(), avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face' },
+            { id: 4, name: 'Rahul Kumar', role: 'participant', joinedAt: now.toISOString(), avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face' },
+            { id: 5, name: 'Sneha Patel', role: 'participant', joinedAt: now.toISOString(), avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face' },
+            { id: 6, name: 'Arjun Singh', role: 'participant', joinedAt: now.toISOString(), avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face' },
+            { id: 7, name: 'Kavitha R', role: 'participant', joinedAt: now.toISOString(), avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&h=150&fit=crop&crop=face' }
+          ],
+          status: 'open',
+          visibility: 'public',
+          category: 'electronics',
+          location: {
+            city: 'Coimbatore',
+            area: 'Sarvanampatti',
+            coordinates: { lat: 11.0719, lng: 77.0028 },
+            address: 'Sarvanampatti, Coimbatore - Tech Hub'
+          },
+          shoppingList: [
+            { item: 'Latest smartphones & accessories', category: 'electronics', priority: 'high', estimatedPrice: 25000 },
+            { item: 'Development laptops & peripherals', category: 'computer', priority: 'high', estimatedPrice: 50000 },
+            { item: 'Smart gadgets & IoT devices', category: 'electronics', priority: 'medium', estimatedPrice: 15000 },
+            { item: 'Coding accessories & tools', category: 'computer', priority: 'medium', estimatedPrice: 5000 }
+          ],
+          budget: {
+            estimated: 75000,
+            shared: false,
+            currency: 'INR',
+            splitExpenses: false
+          },
+          requirements: ['Tech enthusiasm', 'Valid ID', 'Questions about app development!'],
+          tags: ['tech', 'electronics', 'app-demo', 'developer', 'showcase', 'premium'],
+          createdAt: now.toISOString(),
+          updatedAt: now.toISOString(),
+          isUserCreated: true,
+          tripType: 'showcase',
+          ageGroup: '18-40',
+          difficulty: 'intermediate',
+          weatherDependent: false,
+          groupChat: {
+            enabled: true,
+            messageCount: 12
+          },
+          reviews: [
+            { userId: 3, rating: 5, comment: 'Amazing trip! Learned so much about the app and got great tech recommendations!' },
+            { userId: 4, rating: 5, comment: 'Nilesh is a fantastic guide and developer. The app demo was incredible!' }
+          ],
+          bookmarkedBy: [3, 4, 5, 6, 7],
+          reportedBy: [],
+          featured: true,
+          premium: true
+        },
+        {
           id: 'enhanced-trip-1',
           title: 'Weekend Mall Shopping Adventure',
           description: 'Planning a fun shopping trip to Phoenix Mall with friends. We\'ll explore fashion, electronics, and food courts. Perfect for a relaxing weekend!',
           organizer: {
-            id: 2,
+            id: 3,
             name: 'Priya Sharma',
             email: 'priya.sharma@example.com',
             avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',

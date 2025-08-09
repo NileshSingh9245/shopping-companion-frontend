@@ -292,6 +292,53 @@ export const AboutUsModal = ({ isOpen, onClose }) => {
             </Box>
 
             <Box>
+              <Heading size="md" mb={3}>Meet the Creator</Heading>
+              <VStack spacing={3} align="stretch" p={4} bg="blue.50" borderRadius="md" border="1px" borderColor="blue.200">
+                <HStack spacing={4}>
+                  <Box 
+                    w="60px" 
+                    h="60px" 
+                    borderRadius="full" 
+                    bg="blue.500" 
+                    display="flex" 
+                    alignItems="center" 
+                    justifyContent="center"
+                    color="white"
+                    fontSize="xl"
+                    fontWeight="bold"
+                  >
+                    NS
+                  </Box>
+                  <VStack align="start" spacing={1}>
+                    <Text fontWeight="bold" fontSize="lg">Nilesh Kumar Singh</Text>
+                    <Text fontSize="sm" color="blue.600">Full-Stack Developer & App Creator</Text>
+                    <Badge colorScheme="blue" variant="subtle">Featured Developer</Badge>
+                  </VStack>
+                </HStack>
+                
+                <Text fontSize="sm">
+                  🚀 "I built Shopping Companion to revolutionize how people connect and shop together in Coimbatore. 
+                  As a passionate developer, I believe technology should bring people together and create meaningful experiences. 
+                  This app combines my love for coding with solving real-world social problems."
+                </Text>
+                
+                <VStack spacing={2} align="stretch">
+                  <HStack>
+                    <FiPhone />
+                    <Text fontSize="sm">+91 6200759921</Text>
+                  </HStack>
+                  <HStack>
+                    <FiMail />
+                    <Text fontSize="sm">nileshkumarsingh9245@gmail.com</Text>
+                  </HStack>
+                  <Text fontSize="xs" color="gray.600" fontStyle="italic">
+                    Available for collaboration, custom development projects, and suggestions to improve the app!
+                  </Text>
+                </VStack>
+              </VStack>
+            </Box>
+
+            <Box>
               <Heading size="md" mb={3}>Our Impact</Heading>
               <HStack spacing={8} justify="center">
                 <VStack>

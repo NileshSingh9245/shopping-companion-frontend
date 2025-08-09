@@ -207,12 +207,12 @@ const Navbar = () => {
                       src={user?.avatar || user?.profilePicture}
                       name={user?.name}
                     />
-                    {(isUserAdmin || isUserMasterAdmin) && (
+                    {isUserMasterAdmin && (
                       <Badge
                         position="absolute"
                         top="-1"
                         right="-1"
-                        colorScheme={isUserMasterAdmin ? "purple" : "red"}
+                        colorScheme="purple"
                         fontSize="xs"
                         borderRadius="full"
                         px={1}
@@ -226,17 +226,12 @@ const Navbar = () => {
                       <VStack spacing={1} align="start">
                         <HStack>
                           <Text fontWeight="semibold" fontSize="sm">{user?.name}</Text>
-                          {isUserMasterAdmin ? (
+                          {isUserMasterAdmin && (
                             <Badge colorScheme="purple" fontSize="xs">
                               <Icon as={FiShield} mr={1} boxSize={2} />
                               Master Admin
                             </Badge>
-                          ) : isUserAdmin ? (
-                            <Badge colorScheme="red" fontSize="xs">
-                              <Icon as={FiShield} mr={1} boxSize={2} />
-                              Admin
-                            </Badge>
-                          ) : null}
+                          )}
                         </HStack>
                         <Text fontSize="xs" color="gray.600">{user?.email}</Text>
                       </VStack>
@@ -252,7 +247,7 @@ const Navbar = () => {
                       My Trips
                     </MenuItem>
                     
-                    {(isUserAdmin || isUserMasterAdmin) && (
+                    {isUserMasterAdmin && (
                       <>
                         <MenuDivider />
                         <MenuItem as={RouterLink} to="/admin/users" color="red.600">

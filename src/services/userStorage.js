@@ -56,6 +56,27 @@ class UserStorage {
         },
         {
           id: 2,
+          name: 'Nilesh Kumar Singh',
+          email: 'nileshkumarsingh9245@gmail.com',
+          role: 'user',
+          isMasterAdmin: false,
+          adminPermissions: [],
+          avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
+          profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&h=300&fit=crop&crop=face',
+          createdAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+          lastLogin: new Date().toISOString(),
+          isActive: true,
+          phone: '6200759921',
+          address: 'Coimbatore, Tamil Nadu, India',
+          status: 'active',
+          location: { area: 'Coimbatore, Tamil Nadu' },
+          joinDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toLocaleDateString(),
+          lastActive: new Date().toLocaleDateString(),
+          totalTrips: 25,
+          bio: '🚀 Full-Stack Developer & App Creator | Built Shopping Companion to revolutionize the shopping experience with AI-powered buddy matching and smart trip planning. Passionate about creating user-centric applications that solve real-world problems. Available for collaboration and custom development projects!'
+        },
+        {
+          id: 3,
           name: 'Alice Johnson',
           email: 'alice@example.com',
           role: 'user',
@@ -76,7 +97,7 @@ class UserStorage {
           bio: 'Regular user who loves shopping'
         },
         {
-          id: 3,
+          id: 4,
           name: 'Bob Wilson',
           email: 'bob@example.com',
           role: 'user',
@@ -97,7 +118,7 @@ class UserStorage {
           bio: 'Frequent shopper and bargain hunter'
         },
         {
-          id: 4,
+          id: 5,
           name: 'Carol Smith',
           email: 'carol@example.com',
           role: 'user',
@@ -118,7 +139,7 @@ class UserStorage {
           bio: 'Occasional shopper'
         },
         {
-          id: 5,
+          id: 6,
           name: 'David Brown',
           email: 'david@example.com',
           role: 'admin',
