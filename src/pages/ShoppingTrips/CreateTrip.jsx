@@ -44,7 +44,7 @@ import {
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
-import tripsAPI from '../../services/enhancedTripsAPI'
+import tripsAPI from '../../services/realEnhancedTripsAPI'
 
 const CreateTrip = () => {
   const navigate = useNavigate()

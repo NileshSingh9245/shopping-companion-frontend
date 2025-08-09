@@ -75,8 +75,10 @@ import {
   FiPlus,
   FiBarChart
 } from 'react-icons/fi'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '../../store/authStore'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import userProfileAPI from '../../services/userProfileStorage'
 
 const Profile = () => {
   const { user, isAdmin, updateUser } = useAuthStore()
@@ -84,74 +86,81 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false)
   const [selectedTab, setSelectedTab] = useState(0)
   const { isOpen, onOpen, onClose } = useDisclosure()
+  const [editedProfile, setEditedProfile] = useState({})
+  const [newCategory, setNewCategory] = useState('')
+  
+  const bgColor = useColorModeValue('white', 'gray.800')
   
   const isUserAdmin = isAdmin()
-  
-  // Mock user data with more details
-  const [profileData, setProfileData] = useState({
-    id: user?.id || '1',
-    name: user?.name || 'Admin VibeCoding',
-    email: user?.email || 'admin-vibeCoding@cognizant.com',
-    phone: '+91-9876543210',
-    avatar: user?.avatar || 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face',
-    location: {
-      city: 'Coimbatore',
-      state: 'Tamil Nadu',
-      area: 'Sarvanampatti',
-      coordinates: { latitude: 11.0696, longitude: 77.0428 }
-    },
-    preferences: {
-      shoppingCategories: ['electronics', 'clothing', 'books'],
-      budget: 'mid-range',
-      communicationStyle: 'friendly',
-      languages: ['Tamil', 'English']
-    },
-    isVerified: true,
-    isShoppingBuddy: true,
-    buddyRating: 4.8,
-    totalTrips: 15,
-    completedTrips: 12,
-    bio: 'Love exploring new stores and finding great deals! Native Tamil speaker, happy to help newcomers.',
-    joinDate: new Date('2024-01-01'),
-    role: user?.role || 'user',
-    adminPermissions: user?.adminPermissions || []
+  const currentUserId = user?.id
+
+  // Fetch user profile
+  const { 
+    data: profileData, 
+    isLoading: profileLoading, 
+    error: profileError,
+    refetch: refetchProfile 
+  } = useQuery({
+    queryKey: ['userProfile', currentUserId],
+    queryFn: () => userProfileAPI.getUserProfile(currentUserId),
+    enabled: !!currentUserId,
+    retry: 2
   })
 
-  const [tempData, setTempData] = useState(profileData)
-  const [newCategory, setNewCategory] = useState('')
+  // Update profile mutation
+  const updateProfileMutation = useMutation({
+    mutationFn: (updatedData) => userProfileAPI.updateUserProfile(currentUserId, updatedData),
+    onSuccess: () => {
+      toast({
+        title: 'Profile updated successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      })
+      setIsEditing(false)
+      refetchProfile()
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error updating profile',
+        description: error.message || 'Failed to update profile',
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      })
+    }
+  })
 
-  const bgColor = useColorModeValue('white', 'gray.800')
+  const profile = profileData?.data || {}
+
+  // Initialize edit form data
+  useEffect(() => {
+    if (profile && !isEditing) {
+      setEditedProfile(profile)
+    }
+  }, [profile, isEditing])
 
   const handleEdit = () => {
     setIsEditing(true)
-    setTempData(profileData)
+    setEditedProfile(profile)
   }
 
   const handleSave = () => {
-    setProfileData(tempData)
-    updateUser(tempData)
-    setIsEditing(false)
-    toast({
-      title: 'Profile updated',
-      description: 'Your profile has been successfully updated.',
-      status: 'success',
-      duration: 3000,
-      isClosable: true,
-    })
+    updateProfileMutation.mutate(editedProfile)
   }
 
   const handleCancel = () => {
-    setTempData(profileData)
+    setEditedProfile(profile)
     setIsEditing(false)
   }
 
   const handleAddCategory = () => {
-    if (newCategory && !tempData.preferences.shoppingCategories.includes(newCategory)) {
-      setTempData({
-        ...tempData,
+    if (newCategory && !editedProfile.preferences?.shoppingCategories?.includes(newCategory)) {
+      setEditedProfile({
+        ...editedProfile,
         preferences: {
-          ...tempData.preferences,
-          shoppingCategories: [...tempData.preferences.shoppingCategories, newCategory]
+          ...editedProfile.preferences,
+          shoppingCategories: [...(editedProfile.preferences?.shoppingCategories || []), newCategory]
         }
       })
       setNewCategory('')
@@ -159,11 +168,11 @@ const Profile = () => {
   }
 
   const handleRemoveCategory = (category) => {
-    setTempData({
-      ...tempData,
+    setEditedProfile({
+      ...editedProfile,
       preferences: {
-        ...tempData.preferences,
-        shoppingCategories: tempData.preferences.shoppingCategories.filter(c => c !== category)
+        ...editedProfile.preferences,
+        shoppingCategories: editedProfile.preferences?.shoppingCategories?.filter(c => c !== category) || []
       }
     })
   }

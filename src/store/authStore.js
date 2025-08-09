@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import authAPI from '../services/authAPI'
+import SecureMasterAuth from '../services/secureMasterAuth'
 
 export const useAuthStore = create(
   persist(
@@ -140,6 +141,17 @@ export const useAuthStore = create(
       hasPermission: (permission) => {
         const { user } = get()
         return user && user.role === 'admin' && user.adminPermissions && user.adminPermissions.includes(permission)
+      },
+
+      // Master Admin Functions
+      isMasterAdmin: () => {
+        const { user } = get()
+        return SecureMasterAuth.isMasterAdminUser(user)
+      },
+
+      hasMasterAdminPermission: (permission) => {
+        const { user, isMasterAdmin } = get()
+        return isMasterAdmin() && user.adminPermissions && user.adminPermissions.includes(permission)
       },
 
       clearError: () => {

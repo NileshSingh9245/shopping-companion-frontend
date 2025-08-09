@@ -55,7 +55,7 @@ import {
 import { Link as RouterLink } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect, useRef } from 'react'
-import tripsAPI from '../../services/enhancedTripsAPI'
+import tripsAPI from '../../services/realEnhancedTripsAPI'
 import { useAuthStore } from '../../store/authStore'
 
 const TripCard = ({ trip, onEdit, onDelete, onReport, isAdmin, currentUserId, currentUser, onTripUpdate }) => {

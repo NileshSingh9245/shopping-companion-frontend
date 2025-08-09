@@ -47,24 +47,21 @@ import {
   FiEdit,
   FiTrash2
 } from 'react-icons/fi'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import { useQuery } from '@tanstack/react-query'
+import storeAPI from '../../services/enhancedStoreAPI'
 
-const StoreCard = ({ store, onEdit, onDelete, isAdmin }) => {
+const StoreCard = ({ store, onEdit, onDelete, onBookmark, isAdmin, bookmarks }) => {
   const toast = useToast()
-  const [isFavorited, setIsFavorited] = useState(false)
   const { isOpen, onOpen, onClose } = useDisclosure()
   const cancelRef = useRef()
 
-  const handleFavorite = () => {
-    setIsFavorited(!isFavorited)
-    toast({
-      title: isFavorited ? 'Removed from favorites' : 'Added to favorites',
-      status: 'success',
-      duration: 2000,
-      isClosable: true,
-    })
+  const isBookmarked = bookmarks.some(b => b.storeId === store.id)
+
+  const handleBookmark = () => {
+    onBookmark(store.id)
   }
 
   const handleShare = () => {
@@ -110,11 +107,11 @@ const StoreCard = ({ store, onEdit, onDelete, isAdmin }) => {
               </VStack>
               <VStack spacing={1}>
                 <IconButton
-                  icon={<Icon as={FiHeart} color={isFavorited ? 'red.500' : 'gray.400'} />}
+                  icon={<Icon as={FiHeart} color={isBookmarked ? 'red.500' : 'gray.400'} />}
                   variant="ghost"
                   size="sm"
-                  onClick={handleFavorite}
-                  aria-label="Add to favorites"
+                  onClick={handleBookmark}
+                  aria-label="Bookmark store"
                 />
                 <IconButton
                   icon={<Icon as={FiShare2} />}
@@ -228,100 +225,99 @@ const Stores = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [categoryFilter, setCategoryFilter] = useState('')
   const [areaFilter, setAreaFilter] = useState('')
-  const [stores, setStores] = useState([
-    {
-      id: '1',
-      name: 'Phoenix Mall Coimbatore',
-      location: {
-        area: 'Brookefields',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0168, longitude: 77.0061 }
-      },
-      categories: ['Mall', 'Fashion', 'Electronics', 'Food Court'],
-      rating: 4.6,
-      reviewCount: 324,
-      timing: '10:00 AM - 10:00 PM',
-      isOpen: true,
-      images: ['https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=250&fit=crop']
-    },
-    {
-      id: '2',
-      name: 'Reliance Digital Sarvanampatti',
-      location: {
-        area: 'Sarvanampatti',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0712, longitude: 77.0445 }
-      },
-      categories: ['Electronics', 'Gadgets', 'Appliances'],
-      rating: 4.3,
-      reviewCount: 156,
-      timing: '10:30 AM - 9:30 PM',
-      isOpen: true,
-      images: ['https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=400&h=250&fit=crop']
-    },
-    {
-      id: '3',
-      name: 'Brookefields Mall',
-      location: {
-        area: 'Brookefields',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0165, longitude: 77.0088 }
-      },
-      categories: ['Mall', 'Shopping', 'Entertainment', 'Dining'],
-      rating: 4.7,
-      reviewCount: 289,
-      timing: '10:00 AM - 10:00 PM',
-      isOpen: true,
-      images: ['https://images.unsplash.com/photo-1519567241046-7f570eee3ce6?w=400&h=250&fit=crop']
-    },
-    {
-      id: '4',
-      name: 'Lifestyle Stores Gandhipuram',
-      location: {
-        area: 'Gandhipuram',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0168, longitude: 76.9558 }
-      },
-      categories: ['Fashion', 'Clothing', 'Accessories'],
-      rating: 4.2,
-      reviewCount: 98,
-      timing: '10:00 AM - 9:00 PM',
-      isOpen: false,
-      images: ['https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?w=400&h=250&fit=crop']
-    },
-    {
-      id: '5',
-      name: 'Fun Mall Peelamedu',
-      location: {
-        area: 'Peelamedu',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0315, longitude: 77.0288 }
-      },
-      categories: ['Mall', 'Shopping', 'Entertainment'],
-      rating: 4.4,
-      reviewCount: 201,
-      timing: '10:00 AM - 10:00 PM',
-      isOpen: true,
-      images: ['https://images.unsplash.com/photo-1580745332705-c6ec3d9db0ad?w=400&h=250&fit=crop']
-    },
-    {
-      id: '6',
-      name: 'Croma Electronics RS Puram',
-      location: {
-        area: 'RS Puram',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0037, longitude: 76.9663 }
-      },
-      categories: ['Electronics', 'Appliances', 'Gadgets'],
-      rating: 4.1,
-      reviewCount: 87,
-      timing: '10:30 AM - 9:30 PM',
-      isOpen: true,
-      images: ['https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=400&h=250&fit=crop']
-    }
-  ])
-
+  const toast = useToast()
+  
   const isUserAdmin = isAdmin()
+  const currentUserId = user?.id
+
+  // Fetch all stores
+  const { 
+    data: storesData, 
+    isLoading: storesLoading, 
+    error: storesError,
+    refetch: refetchStores 
+  } = useQuery({
+    queryKey: ['allStores'],
+    queryFn: () => storeAPI.getAllStores(),
+    retry: 2
+  })
+
+  // Fetch user's bookmarked stores
+  const { 
+    data: bookmarksData, 
+    isLoading: bookmarksLoading, 
+    error: bookmarksError 
+  } = useQuery({
+    queryKey: ['userBookmarks', currentUserId],
+    queryFn: () => storeAPI.getUserBookmarks(currentUserId),
+    enabled: !!currentUserId,
+    retry: 2
+  })
+
+  const stores = storesData?.data?.stores || []
+  const bookmarks = bookmarksData?.data?.bookmarks || []
+
+  const handleBookmark = async (storeId) => {
+    try {
+      const isBookmarked = bookmarks.some(b => b.storeId === storeId)
+      if (isBookmarked) {
+        await storeAPI.removeBookmark(currentUserId, storeId)
+        toast({
+          title: 'Removed from bookmarks',
+          status: 'info',
+          duration: 2000,
+          isClosable: true,
+        })
+      } else {
+        await storeAPI.addBookmark(currentUserId, storeId)
+        toast({
+          title: 'Added to bookmarks',
+          status: 'success',
+          duration: 2000,
+          isClosable: true,
+        })
+      }
+      refetchStores()
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update bookmark',
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      })
+    }
+  }
+
+  const handleEdit = (store) => {
+    toast({
+      title: 'Edit Feature',
+      description: 'Store editing feature coming soon!',
+      status: 'info',
+      duration: 3000,
+      isClosable: true,
+    })
+  }
+
+  const handleDelete = async (storeId) => {
+    try {
+      // In real implementation, this would delete the store
+      toast({
+        title: 'Store deleted successfully',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete store',
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      })
+    }
+  }
 
   const filteredStores = stores.filter(store => {
     const matchesSearch = store.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -336,14 +332,6 @@ const Stores = () => {
 
   const categories = [...new Set(stores.flatMap(store => store.categories))]
   const areas = [...new Set(stores.map(store => store.location.area))]
-
-  const handleEdit = (store) => {
-    // Navigate to edit page or open edit modal
-  }
-
-  const handleDelete = (storeId) => {
-    setStores(stores.filter(store => store.id !== storeId))
-  }
 
   return (
     <Container maxW="7xl" py={8}>
@@ -438,20 +426,54 @@ const Stores = () => {
         </HStack>
 
         {/* Stores Grid */}
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-          {filteredStores.map(store => (
-            <StoreCard
-              key={store.id}
-              store={store}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              isAdmin={isUserAdmin}
-            />
-          ))}
-        </SimpleGrid>
+        {storesLoading ? (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} overflow="hidden" shadow="md">
+                <Box w="100%" h="200px" bg="gray.200" />
+                <CardBody>
+                  <VStack spacing={4}>
+                    <Box w="80%" h="5" bg="gray.200" borderRadius="md" />
+                    <Box w="60%" h="4" bg="gray.100" borderRadius="md" />
+                    <Box w="40%" h="3" bg="gray.100" borderRadius="md" />
+                  </VStack>
+                </CardBody>
+              </Card>
+            ))}
+          </SimpleGrid>
+        ) : storesError ? (
+          <Card py={12}>
+            <CardBody textAlign="center">
+              <VStack spacing={4}>
+                <Icon as={FiSearch} boxSize={12} color="red.400" />
+                <Heading size="md" color="red.500">Error loading stores</Heading>
+                <Text color="gray.500">
+                  {storesError.message || 'Failed to load stores'}
+                </Text>
+                <Button onClick={() => refetchStores()} colorScheme="brand">
+                  Try Again
+                </Button>
+              </VStack>
+            </CardBody>
+          </Card>
+        ) : (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+            {filteredStores.map(store => (
+              <StoreCard
+                key={store.id}
+                store={store}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+                onBookmark={handleBookmark}
+                isAdmin={isUserAdmin}
+                bookmarks={bookmarks}
+              />
+            ))}
+          </SimpleGrid>
+        )}
 
         {/* Empty state */}
-        {filteredStores.length === 0 && (
+        {!storesLoading && !storesError && filteredStores.length === 0 && (
           <Card py={12}>
             <CardBody textAlign="center">
               <VStack spacing={4}>

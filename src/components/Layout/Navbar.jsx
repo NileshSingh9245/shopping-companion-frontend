@@ -44,11 +44,12 @@ const NavLink = ({ children, to, ...props }) => (
 
 const Navbar = () => {
   const { isOpen, onOpen, onClose } = useDisclosure()
-  const { user, isAuthenticated, logout, isAdmin } = useAuthStore()
+  const { user, isAuthenticated, logout, isAdmin, isMasterAdmin } = useAuthStore()
   const navigate = useNavigate()
   const location = useLocation()
 
   const isUserAdmin = isAdmin()
+  const isUserMasterAdmin = isMasterAdmin && isMasterAdmin()
 
   const handleLogout = () => {
     logout()
@@ -206,12 +207,12 @@ const Navbar = () => {
                       src={user?.avatar || user?.profilePicture}
                       name={user?.name}
                     />
-                    {isUserAdmin && (
+                    {(isUserAdmin || isUserMasterAdmin) && (
                       <Badge
                         position="absolute"
                         top="-1"
                         right="-1"
-                        colorScheme="red"
+                        colorScheme={isUserMasterAdmin ? "purple" : "red"}
                         fontSize="xs"
                         borderRadius="full"
                         px={1}
@@ -225,12 +226,17 @@ const Navbar = () => {
                       <VStack spacing={1} align="start">
                         <HStack>
                           <Text fontWeight="semibold" fontSize="sm">{user?.name}</Text>
-                          {isUserAdmin && (
+                          {isUserMasterAdmin ? (
+                            <Badge colorScheme="purple" fontSize="xs">
+                              <Icon as={FiShield} mr={1} boxSize={2} />
+                              Master Admin
+                            </Badge>
+                          ) : isUserAdmin ? (
                             <Badge colorScheme="red" fontSize="xs">
                               <Icon as={FiShield} mr={1} boxSize={2} />
                               Admin
                             </Badge>
-                          )}
+                          ) : null}
                         </HStack>
                         <Text fontSize="xs" color="gray.600">{user?.email}</Text>
                       </VStack>
@@ -246,7 +252,7 @@ const Navbar = () => {
                       My Trips
                     </MenuItem>
                     
-                    {isUserAdmin && (
+                    {(isUserAdmin || isUserMasterAdmin) && (
                       <>
                         <MenuDivider />
                         <MenuItem as={RouterLink} to="/admin/users" color="red.600">
@@ -264,6 +270,16 @@ const Navbar = () => {
                         <MenuItem as={RouterLink} to="/admin/settings" color="red.600">
                           <Icon as={FiSettings} mr={2} />
                           Admin Settings
+                        </MenuItem>
+                      </>
+                    )}
+                    
+                    {isUserMasterAdmin && (
+                      <>
+                        <MenuDivider />
+                        <MenuItem as={RouterLink} to="/admin/master-dashboard" color="purple.600">
+                          <Icon as={FiShield} mr={2} />
+                          Master Admin Dashboard
                         </MenuItem>
                       </>
                     )}
