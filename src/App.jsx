@@ -27,6 +27,8 @@ import Events from './pages/Community/Events'
 import Blog from './pages/Community/Blog'
 import ApiDocs from './pages/Developer/ApiDocs'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
+import MasterAdminRoute from './components/Auth/MasterAdminRoute'
+import MasterAdminDashboard from './pages/Admin/MasterAdminDashboard'
 import { useAuthStore } from './store/authStore'
 import { useEffect } from 'react'
 import { scrollToTop } from './utils/scrollUtils'
@@ -137,6 +139,13 @@ function App() {
           <ProtectedRoute>
             <ManageStores />
           </ProtectedRoute>
+        } />
+        
+        {/* Master Admin route */}
+        <Route path="/admin/master-dashboard" element={
+          <MasterAdminRoute>
+            <MasterAdminDashboard />
+          </MasterAdminRoute>
         } />
         
         {/* Legal Pages */}

@@ -2,7 +2,7 @@
 // Set DEMO_MODE to true to disable all API calls and use only local/seed data
 export const config = {
   // Enable demo mode to disable API calls (useful when backend is not available)
-  DEMO_MODE: false, // Set to true to disable all API calls
+  DEMO_MODE: true, // Set to true to disable all API calls
   
   // Show demo data notice
   SHOW_DEMO_NOTICE: true,

@@ -52,36 +52,23 @@ import {
   FiUsers,
   FiFlag
 } from 'react-icons/fi'
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link as RouterLink } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import { useQuery } from '@tanstack/react-query'
+import buddySystemAPI from '../../services/buddySystemAPI'
 
-const BuddyCard = ({ buddy, onConnect, onReport, isAdmin, currentUserId }) => {
+const BuddyCard = ({ buddy, onConnect, onReport, isAdmin, currentUserId, connections, requests }) => {
   const toast = useToast()
-  const [isConnected, setIsConnected] = useState(false)
   const { isOpen, onOpen, onClose } = useDisclosure()
   const cancelRef = useRef()
 
+  // Check if already connected or has pending request
+  const isConnected = connections.some(conn => conn.id === buddy.id)
+  const hasPendingRequest = requests.some(req => req.from === currentUserId && req.to === buddy.id)
+
   const handleConnect = () => {
-    if (isConnected) {
-      setIsConnected(false)
-      toast({
-        title: 'Connection removed',
-        description: `You have disconnected from ${buddy.name}`,
-        status: 'info',
-        duration: 3000,
-        isClosable: true,
-      })
-    } else {
-      setIsConnected(true)
-      toast({
-        title: 'Connection sent!',
-        description: `Request sent to ${buddy.name}`,
-        status: 'success',
-        duration: 3000,
-        isClosable: true,
-      })
-    }
+    onConnect(buddy.id)
   }
 
   const handleMessage = () => {
@@ -222,13 +209,14 @@ const BuddyCard = ({ buddy, onConnect, onReport, isAdmin, currentUserId }) => {
               <HStack spacing={2} w="full">
                 <Button
                   size="sm"
-                  colorScheme={isConnected ? "red" : "brand"}
+                  colorScheme={isConnected ? "green" : hasPendingRequest ? "yellow" : "brand"}
                   variant={isConnected ? "outline" : "solid"}
                   leftIcon={<Icon as={FiUserPlus} />}
                   onClick={handleConnect}
+                  isDisabled={isConnected || hasPendingRequest}
                   flex={1}
                 >
-                  {isConnected ? 'Connected' : 'Connect'}
+                  {isConnected ? 'Connected' : hasPendingRequest ? 'Request Sent' : 'Connect'}
                 </Button>
                 <IconButton
                   icon={<Icon as={FiMessageCircle} />}
@@ -290,128 +278,95 @@ const ShoppingBuddies = () => {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [areaFilter, setAreaFilter] = useState('')
   const [budgetFilter, setBudgetFilter] = useState('')
+  const toast = useToast()
   
   const isUserAdmin = isAdmin()
   const currentUserId = user?.id
 
-  // Mock data for demo - Coimbatore based
-  const [buddies] = useState([
-    {
-      id: '1',
-      name: 'Priya Krishnan',
-      avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face',
-      location: {
-        area: 'Sarvanampatti',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0696, longitude: 77.0428 }
-      },
-      preferences: {
-        shoppingCategories: ['electronics', 'clothing', 'books'],
-        budget: 'mid-range',
-        languages: ['Tamil', 'English']
-      },
-      isVerified: true,
-      buddyRating: 4.8,
-      totalTrips: 15,
-      bio: 'Love exploring new stores and finding great deals! Native Tamil speaker, happy to help newcomers.'
-    },
-    {
-      id: '2',
-      name: 'Arjun Venkatesh',
-      avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-      location: {
-        area: 'Sarvanampatti',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0712, longitude: 77.0445 }
-      },
-      preferences: {
-        shoppingCategories: ['electronics', 'sports', 'gadgets'],
-        budget: 'premium',
-        languages: ['Tamil', 'English', 'Hindi']
-      },
-      isVerified: true,
-      buddyRating: 4.6,
-      totalTrips: 22,
-      bio: 'Tech enthusiast and gadget lover. Always looking for the latest electronics and best deals.'
-    },
-    {
-      id: '3',
-      name: 'Sneha Raj',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      location: {
-        area: 'Brookefields',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0165, longitude: 77.0088 }
-      },
-      preferences: {
-        shoppingCategories: ['clothing', 'accessories', 'cosmetics'],
-        budget: 'luxury',
-        languages: ['Tamil', 'English']
-      },
-      isVerified: true,
-      buddyRating: 4.9,
-      totalTrips: 18,
-      bio: 'Fashion enthusiast and style blogger. Love helping others find their perfect style!'
-    },
-    {
-      id: '4',
-      name: 'Meera Iyer',
-      avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-      location: {
-        area: 'Gandhipuram',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0168, longitude: 76.9558 }
-      },
-      preferences: {
-        shoppingCategories: ['grocery', 'home-decor', 'organic'],
-        budget: 'budget',
-        languages: ['Tamil', 'English', 'Malayalam']
-      },
-      isVerified: true,
-      buddyRating: 4.7,
-      totalTrips: 12,
-      bio: 'Sustainable living advocate. Expert in finding eco-friendly and budget shopping options.'
-    },
-    {
-      id: '5',
-      name: 'Admin VibeCoding',
-      avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-      location: {
-        area: 'Sarvanampatti',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0696, longitude: 77.0428 }
-      },
-      preferences: {
-        shoppingCategories: ['all'],
-        budget: 'all',
-        languages: ['Tamil', 'English', 'Hindi']
-      },
-      isVerified: true,
-      role: 'admin',
-      buddyRating: 5.0,
-      totalTrips: 50,
-      bio: 'Platform administrator and VibeCoding expert. Ensuring great shopping experiences for everyone!'
-    },
-    {
-      id: '6',
-      name: 'Vishnu Raj',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-      location: {
-        area: 'Peelamedu',
-        city: 'Coimbatore',
-        coordinates: { latitude: 11.0315, longitude: 77.0288 }
-      },
-      preferences: {
-        shoppingCategories: ['furniture', 'home-decor', 'appliances'],
-        budget: 'premium',
-        languages: ['Tamil', 'English']
-      },
-      isVerified: false,
-      buddyRating: 4.3,
-      totalTrips: 8,
-      bio: 'Interior design enthusiast. Love finding unique pieces for home decoration.'
+  // Fetch all available buddies
+  const { 
+    data: buddiesData, 
+    isLoading: buddiesLoading, 
+    error: buddiesError,
+    refetch: refetchBuddies 
+  } = useQuery({
+    queryKey: ['allBuddies', currentUserId],
+    queryFn: () => buddySystemAPI.getAllBuddies(currentUserId),
+    enabled: !!currentUserId,
+    retry: 2
+  })
+
+  // Fetch user's connections
+  const { 
+    data: connectionsData, 
+    isLoading: connectionsLoading, 
+    error: connectionsError 
+  } = useQuery({
+    queryKey: ['userConnections', currentUserId],
+    queryFn: () => buddySystemAPI.getUserConnections(currentUserId),
+    enabled: !!currentUserId,
+    retry: 2
+  })
+
+  // Fetch buddy requests
+  const { 
+    data: requestsData, 
+    isLoading: requestsLoading, 
+    error: requestsError 
+  } = useQuery({
+    queryKey: ['buddyRequests', currentUserId],
+    queryFn: () => buddySystemAPI.getPendingRequests(currentUserId),
+    enabled: !!currentUserId,
+    retry: 2
+  })
+
+  const buddies = buddiesData?.data?.buddies || []
+  const connections = connectionsData?.data?.connections || []
+  const requests = requestsData?.data?.requests || []
+
+  const handleConnect = async (buddyId) => {
+    try {
+      await buddySystemAPI.sendBuddyRequest(currentUserId, buddyId)
+      toast({
+        title: 'Request sent!',
+        description: 'Your buddy request has been sent.',
+        status: 'success',
+        duration: 3000,
+        isClosable: true,
+      })
+      refetchBuddies()
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to send buddy request',
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      })
     }
-  ])
+  }
+
+  const handleReport = async (buddyId) => {
+    try {
+      // For now, just show a success message
+      // In real implementation, this would report the user
+      toast({
+        title: 'User reported',
+        description: 'Thank you for reporting. We will review this user.',
+        status: 'info',
+        duration: 3000,
+        isClosable: true,
+      })
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to report user',
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      })
+    }
+  }
 
   const filteredBuddies = buddies.filter(buddy => {
     const matchesSearch = buddy.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -432,14 +387,6 @@ const ShoppingBuddies = () => {
   const categories = [...new Set(buddies.flatMap(buddy => buddy.preferences.shoppingCategories))]
   const areas = [...new Set(buddies.map(buddy => buddy.location.area))]
   const budgets = [...new Set(buddies.map(buddy => buddy.preferences.budget))]
-
-  const handleConnect = (buddyId) => {
-    // Handle buddy connection logic
-  }
-
-  const handleReport = (buddyId) => {
-    // Handle buddy reporting logic
-  }
 
   return (
     <Container maxW="7xl" py={8}>
@@ -538,18 +485,51 @@ const ShoppingBuddies = () => {
         </HStack>
 
         {/* Buddies Grid */}
-        <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={6}>
-          {filteredBuddies.map(buddy => (
-            <BuddyCard
-              key={buddy.id}
-              buddy={buddy}
-              onConnect={handleConnect}
-              onReport={handleReport}
-              isAdmin={isUserAdmin}
-              currentUserId={currentUserId}
-            />
-          ))}
-        </SimpleGrid>
+        {buddiesLoading ? (
+          <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={6}>
+            {[...Array(8)].map((_, i) => (
+              <Card key={i} overflow="hidden" shadow="md">
+                <CardBody>
+                  <VStack spacing={4}>
+                    <Box w="64px" h="64px" bg="gray.200" borderRadius="full" />
+                    <Box w="80%" h="4" bg="gray.200" borderRadius="md" />
+                    <Box w="60%" h="3" bg="gray.100" borderRadius="md" />
+                  </VStack>
+                </CardBody>
+              </Card>
+            ))}
+          </SimpleGrid>
+        ) : buddiesError ? (
+          <Card py={12}>
+            <CardBody textAlign="center">
+              <VStack spacing={4}>
+                <Icon as={FiUsers} boxSize={12} color="red.400" />
+                <Heading size="md" color="red.500">Error loading buddies</Heading>
+                <Text color="gray.500">
+                  {buddiesError.message || 'Failed to load shopping buddies'}
+                </Text>
+                <Button onClick={() => refetchBuddies()} colorScheme="brand">
+                  Try Again
+                </Button>
+              </VStack>
+            </CardBody>
+          </Card>
+        ) : (
+          <SimpleGrid columns={{ base: 1, sm: 2, md: 3, lg: 4 }} spacing={6}>
+            {filteredBuddies.map(buddy => (
+              <BuddyCard
+                key={buddy.id}
+                buddy={buddy}
+                onConnect={handleConnect}
+                onReport={handleReport}
+                isAdmin={isUserAdmin}
+                currentUserId={currentUserId}
+                connections={connections}
+                requests={requests}
+              />
+            ))}
+          </SimpleGrid>
+        )}
 
         {/* Empty state */}
         {filteredBuddies.length === 0 && (

@@ -6,6 +6,7 @@ const USER_TRIPS_KEY = 'shopping_companion_user_trips'
 class UserTripsStorage {
   constructor() {
     this.trips = this.loadTrips()
+    this.initializeSeedData()
   }
 
   // Load trips from localStorage
@@ -25,6 +26,101 @@ class UserTripsStorage {
       localStorage.setItem(USER_TRIPS_KEY, JSON.stringify(this.trips))
     } catch (error) {
       console.error('Error saving user trips:', error)
+    }
+  }
+
+  // Initialize with seed data if no trips exist
+  initializeSeedData() {
+    if (this.trips.length === 0) {
+      const seedTrips = [
+        {
+          id: 'seed-trip-1',
+          title: 'Weekend Grocery Shopping',
+          description: 'Looking for shopping buddies for weekend grocery shopping at Walmart.',
+          organizer: {
+            id: 2,
+            name: 'Alice Johnson',
+            email: 'alice@example.com',
+            avatar: null
+          },
+          targetStores: ['Walmart Supercenter', 'Target'],
+          scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+          estimatedDuration: 2,
+          maxParticipants: 4,
+          participants: [
+            {
+              id: 3,
+              name: 'Bob Wilson',
+              email: 'bob@example.com',
+              joinedAt: new Date().toISOString()
+            }
+          ],
+          status: 'open',
+          visibility: 'public',
+          category: 'groceries',
+          shoppingList: ['Vegetables', 'Fruits', 'Dairy products'],
+          createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+          isUserCreated: true
+        },
+        {
+          id: 'seed-trip-2',
+          title: 'Electronics Shopping',
+          description: 'Planning to buy some electronics. Join me for better deals!',
+          organizer: {
+            id: 3,
+            name: 'Bob Wilson',
+            email: 'bob@example.com',
+            avatar: null
+          },
+          targetStores: ['Best Buy', 'Amazon Fresh'],
+          scheduledDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+          estimatedDuration: 3,
+          maxParticipants: 3,
+          participants: [],
+          status: 'open',
+          visibility: 'public',
+          category: 'electronics',
+          shoppingList: ['Laptop', 'Mouse', 'Keyboard'],
+          createdAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
+          isUserCreated: true
+        },
+        {
+          id: 'seed-trip-3',
+          title: 'Fashion Shopping Spree',
+          description: 'Looking for fashion shopping companions for the weekend!',
+          organizer: {
+            id: 4,
+            name: 'Carol Smith',
+            email: 'carol@example.com',
+            avatar: null
+          },
+          targetStores: ['H&M', 'Zara', 'Forever 21'],
+          scheduledDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          estimatedDuration: 4,
+          maxParticipants: 5,
+          participants: [
+            {
+              id: 2,
+              name: 'Alice Johnson',
+              email: 'alice@example.com',
+              joinedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString()
+            }
+          ],
+          status: 'completed',
+          visibility: 'public',
+          category: 'fashion',
+          shoppingList: ['Summer dresses', 'Shoes', 'Accessories'],
+          createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+          updatedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+          isUserCreated: true
+        }
+      ]
+      
+      this.trips = seedTrips
+      this.saveTrips()
+      console.log('Initialized seed trip data')
     }
   }
 

@@ -1,5 +1,8 @@
 import axios from 'axios'
 import config from '../config/environment.js'
+import demoConfig from '../config/demo.js'
+import userStorage from './userStorage.js'
+import SecureMasterAuth from './secureMasterAuth.js'
 
 const API_BASE_URL = config.API_URL + '/api'
 
@@ -152,21 +155,42 @@ const authAPI = {
     }
   },
 
-  // Auth endpoints - Using dummy data for demo
+  // Auth endpoints - Using demo mode and user storage
   login: async (credentials) => {
+    // If demo mode is disabled, try real API first
+    if (!demoConfig.DEMO_MODE) {
+      try {
+        const response = await api.post('/auth/login', credentials)
+        return response
+      } catch (error) {
+        console.warn('API login failed, falling back to demo mode:', error.message)
+      }
+    }
+
+    // Demo mode login
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        // Get existing users from localStorage (registered users)
-        const storedUsers = JSON.parse(localStorage.getItem('registered_users') || '[]')
-        const allUsers = [...dummyUsers, ...storedUsers]
+        // Check for secure master admin authentication first
+        if (SecureMasterAuth.verifyMasterCredentials(credentials.email, credentials.password)) {
+          const masterAdminUser = SecureMasterAuth.createMasterAdminUser(credentials.email)
+          const token = `secure_master_token_${masterAdminUser.id}_${Date.now()}`
+          resolve({
+            success: true,
+            data: {
+              user: masterAdminUser,
+              token: token
+            }
+          })
+          return
+        }
+
+        // Use user storage for regular login
+        const user = userStorage.getUserByEmail(credentials.email)
         
-        const user = allUsers.find(u => 
-          u.email === credentials.email && u.password === credentials.password
-        )
-        
-        if (user) {
+        if (user && credentials.password === 'demo123') { // Demo password for all users
+          userStorage.updateLastLogin(user.id) // Update last login
           const { password, ...userWithoutPassword } = user
-          const token = `dummy_token_${user.id}_${Date.now()}`
+          const token = `demo_token_${user.id}_${Date.now()}`
           resolve({
             success: true,
             data: {
@@ -178,7 +202,7 @@ const authAPI = {
           reject({
             response: {
               data: {
-                message: 'Invalid email or password'
+                message: 'Invalid email or password. In demo mode, use password: demo123'
               }
             }
           })
@@ -188,14 +212,21 @@ const authAPI = {
   },
 
   register: async (userData) => {
+    // If demo mode is disabled, try real API first
+    if (!demoConfig.DEMO_MODE) {
+      try {
+        const response = await api.post('/auth/register', userData)
+        return response
+      } catch (error) {
+        console.warn('API register failed, falling back to demo mode:', error.message)
+      }
+    }
+
+    // Demo mode registration
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        // Get existing users from localStorage (registered users)
-        const storedUsers = JSON.parse(localStorage.getItem('registered_users') || '[]')
-        const allUsers = [...dummyUsers, ...storedUsers]
-        
-        // Check for existing email
-        const existingUserByEmail = allUsers.find(u => u.email === userData.email)
+        // Check for existing email in user storage
+        const existingUserByEmail = userStorage.getUserByEmail(userData.email)
         if (existingUserByEmail) {
           reject({
             response: {
@@ -207,23 +238,10 @@ const authAPI = {
           return
         }
 
-        // Check for existing phone number
-        const existingUserByPhone = allUsers.find(u => u.phone === userData.phone)
-        if (existingUserByPhone) {
-          reject({
-            response: {
-              data: {
-                message: 'An account with this phone number already exists'
-              }
-            }
-          })
-          return
-        }
-
-        const newUser = {
-          id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        // Create new user in storage
+        const newUser = userStorage.createUser({
           ...userData,
-          role: 'user',
+          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612db2e?w=150&h=150&fit=crop&crop=face',
           location: {
             city: 'Coimbatore',
             state: 'Tamil Nadu',
@@ -236,22 +254,15 @@ const authAPI = {
             communicationStyle: 'friendly',
             languages: ['English']
           },
-          avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612db2e?w=150&h=150&fit=crop&crop=face',
           isVerified: false,
           isShoppingBuddy: false,
           buddyRating: 0,
           totalTrips: 0,
-          bio: 'New member of Shopping Companion',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-
-        // Add to stored users (so future registrations can check against it)
-        storedUsers.push(newUser)
-        localStorage.setItem('registered_users', JSON.stringify(storedUsers))
+          bio: 'New member of Shopping Companion'
+        })
         
         const { password, ...userWithoutPassword } = newUser
-        const token = `dummy_token_${newUser.id}_${Date.now()}`
+        const token = `demo_token_${newUser.id}_${Date.now()}`
         
         resolve({
           success: true,
