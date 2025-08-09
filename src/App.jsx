@@ -1,4 +1,4 @@
-import { Routes, Route } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { Box } from '@chakra-ui/react'
 import Layout from './components/Layout/Layout'
 import Home from './pages/Home'
@@ -21,16 +21,31 @@ import TermsOfService from './pages/Legal/TermsOfService'
 import CookiePolicy from './pages/Legal/CookiePolicy'
 import Accessibility from './pages/Legal/Accessibility'
 import CareersPage from './pages/Company/CareersPage'
+import Partnerships from './pages/Company/Partnerships'
+import Reviews from './pages/Community/Reviews'
+import Events from './pages/Community/Events'
+import Blog from './pages/Community/Blog'
+import ApiDocs from './pages/Developer/ApiDocs'
 import ProtectedRoute from './components/Auth/ProtectedRoute'
 import { useAuthStore } from './store/authStore'
 import { useEffect } from 'react'
+import { scrollToTop } from './utils/scrollUtils'
+import { showDemoModeInfo } from './utils/demoHelpers'
 
 function App() {
   const { checkAuth, isLoading } = useAuthStore()
+  const location = useLocation()
 
   useEffect(() => {
     checkAuth()
+    // Show demo mode info on app start
+    showDemoModeInfo()
   }, [checkAuth])
+
+  // Auto-scroll to top on route change
+  useEffect(() => {
+    scrollToTop()
+  }, [location.pathname])
 
   if (isLoading) {
     return (
@@ -53,6 +68,10 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        
+        {/* Legacy route redirects */}
+        <Route path="/shopping-trips" element={<Navigate to="/trips" replace />} />
+        <Route path="/shopping-trips/:id" element={<Navigate to="/trips/:id" replace />} />
         
         {/* Protected routes */}
         <Route path="/dashboard" element={
@@ -124,7 +143,18 @@ function App() {
         <Route path="/terms" element={<TermsOfService />} />
         <Route path="/cookies" element={<CookiePolicy />} />
         <Route path="/accessibility" element={<Accessibility />} />
+        
+        {/* Company Pages */}
         <Route path="/careers" element={<CareersPage />} />
+        <Route path="/partnerships" element={<Partnerships />} />
+        
+        {/* Community Pages */}
+        <Route path="/reviews" element={<Reviews />} />
+        <Route path="/events" element={<Events />} />
+        <Route path="/blog" element={<Blog />} />
+        
+        {/* Developer Pages */}
+        <Route path="/api-docs" element={<ApiDocs />} />
       </Routes>
     </Layout>
   )

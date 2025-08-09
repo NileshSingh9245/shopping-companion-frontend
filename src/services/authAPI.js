@@ -32,10 +32,22 @@ api.interceptors.response.use(
     return response
   },
   (error) => {
+    // Handle 401 errors more gracefully
     if (error.response?.status === 401) {
-      // Unauthorized - clear token and redirect to login
-      localStorage.removeItem('token')
-      window.location.href = '/login'
+      // Only auto-logout for auth-related endpoints
+      const isAuthEndpoint = error.config?.url?.includes('/auth/') || 
+                            error.config?.url?.includes('/verify-token')
+      
+      if (isAuthEndpoint) {
+        // Clear token but don't redirect immediately
+        localStorage.removeItem('token')
+        console.info('Auth token invalid, clearing token')
+      } else {
+        // For other endpoints, just log silently - this is expected in demo mode
+        console.debug('API call failed (401) - likely in demo mode:', error.config?.url)
+      }
+    } else if (error.response?.status >= 500) {
+      console.warn('Server error:', error.response?.status)
     }
     return Promise.reject(error)
   }
@@ -144,19 +156,11 @@ const authAPI = {
   login: async (credentials) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        // Only allow the specific admin email for login
-        if (credentials.email !== 'admin-vibeCoding@cognizant.com') {
-          reject({
-            response: {
-              data: {
-                message: 'Access restricted. Only admin-vibeCoding@cognizant.com is allowed to login.'
-              }
-            }
-          })
-          return
-        }
-
-        const user = dummyUsers.find(u => 
+        // Get existing users from localStorage (registered users)
+        const storedUsers = JSON.parse(localStorage.getItem('registered_users') || '[]')
+        const allUsers = [...dummyUsers, ...storedUsers]
+        
+        const user = allUsers.find(u => 
           u.email === credentials.email && u.password === credentials.password
         )
         
@@ -186,13 +190,30 @@ const authAPI = {
   register: async (userData) => {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        const existingUser = dummyUsers.find(u => u.email === userData.email)
+        // Get existing users from localStorage (registered users)
+        const storedUsers = JSON.parse(localStorage.getItem('registered_users') || '[]')
+        const allUsers = [...dummyUsers, ...storedUsers]
         
-        if (existingUser) {
+        // Check for existing email
+        const existingUserByEmail = allUsers.find(u => u.email === userData.email)
+        if (existingUserByEmail) {
           reject({
             response: {
               data: {
-                message: 'User with this email already exists'
+                message: 'An account with this email already exists'
+              }
+            }
+          })
+          return
+        }
+
+        // Check for existing phone number
+        const existingUserByPhone = allUsers.find(u => u.phone === userData.phone)
+        if (existingUserByPhone) {
+          reject({
+            response: {
+              data: {
+                message: 'An account with this phone number already exists'
               }
             }
           })
@@ -200,7 +221,7 @@ const authAPI = {
         }
 
         const newUser = {
-          id: `${dummyUsers.length + 1}`,
+          id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
           ...userData,
           role: 'user',
           location: {
@@ -225,7 +246,10 @@ const authAPI = {
           updatedAt: new Date()
         }
 
-        dummyUsers.push(newUser)
+        // Add to stored users (so future registrations can check against it)
+        storedUsers.push(newUser)
+        localStorage.setItem('registered_users', JSON.stringify(storedUsers))
+        
         const { password, ...userWithoutPassword } = newUser
         const token = `dummy_token_${newUser.id}_${Date.now()}`
         

@@ -110,9 +110,17 @@ export const useAuthStore = create(
             error: null
           })
         } catch (error) {
-          // Token is invalid, clear it
-          get().logout()
-          set({ isLoading: false })
+          // Token is invalid, clear it but don't immediately redirect
+          console.warn('Token verification failed:', error.message)
+          set({
+            user: null,
+            token: null,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null
+          })
+          localStorage.removeItem('token')
+          authAPI.setAuthToken(null)
         }
       },
 

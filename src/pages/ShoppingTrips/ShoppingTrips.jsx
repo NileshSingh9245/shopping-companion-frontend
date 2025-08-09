@@ -29,7 +29,15 @@ import {
   Avatar,
   AvatarGroup,
   Progress,
-  Divider
+  Divider,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Spinner,
+  Alert,
+  AlertIcon
 } from '@chakra-ui/react'
 import { 
   FiMapPin, 
@@ -47,99 +55,18 @@ import {
 import { Link as RouterLink } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useState, useEffect, useRef } from 'react'
-import tripsAPI from '../../services/tripsAPI'
+import tripsAPI from '../../services/enhancedTripsAPI'
 import { useAuthStore } from '../../store/authStore'
 
-// Mock data for demo - Coimbatore based
-const mockTrips = [
-  {
-    id: '1',
-    title: 'Weekend Electronics Shopping',
-    description: 'Looking for companions to visit electronics stores in Brookefields for laptop and mobile shopping',
-    organizer: {
-      id: '1',
-      name: 'Priya Krishnan',
-      profilePicture: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face'
-    },
-    participants: [
-      { id: '2', name: 'Arjun Venkatesh', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face' },
-      { id: '3', name: 'Sneha Raj', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face' }
-    ],
-    maxParticipants: 4,
-    scheduledDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
-    meetingPoint: 'Phoenix Mall Main Entrance, Coimbatore',
-    status: 'open',
-    category: 'electronics',
-    budget: { min: 10000, max: 50000, currency: 'INR' },
-    area: 'Brookefields'
-  },
-  {
-    id: '2',
-    title: 'Clothing Shopping at Brookefields',
-    description: 'Planning a fun shopping day at Brookefields Mall. Join for clothes, accessories, and food!',
-    organizer: {
-      id: '2',
-      name: 'Rahul Kumar',
-      profilePicture: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face'
-    },
-    participants: [
-      { id: '1', name: 'Priya Krishnan', avatar: 'https://images.unsplash.com/photo-1494790108755-2616b612b47c?w=150&h=150&fit=crop&crop=face' }
-    ],
-    maxParticipants: 6,
-    scheduledDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
-    meetingPoint: 'Brookefields Mall Food Court',
-    status: 'open',
-    category: 'clothing',
-    budget: { min: 5000, max: 20000, currency: 'INR' },
-    area: 'Brookefields'
-  },
-  {
-    id: '3',
-    title: 'Grocery Shopping in Sarvanampatti',
-    description: 'Weekly grocery shopping at local markets and supermarkets in Sarvanampatti area',
-    organizer: {
-      id: '4',
-      name: 'Meera Iyer',
-      profilePicture: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face'
-    },
-    participants: [
-      { id: '5', name: 'Admin VibeCoding', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face' }
-    ],
-    maxParticipants: 3,
-    scheduledDate: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000),
-    meetingPoint: 'Reliance Fresh Sarvanampatti',
-    status: 'open',
-    category: 'grocery',
-    budget: { min: 2000, max: 8000, currency: 'INR' },
-    area: 'Sarvanampatti'
-  },
-  {
-    id: '4',
-    title: 'Home Decor Shopping',
-    description: 'Looking for home decor items and furniture at various stores in Gandhipuram',
-    organizer: {
-      id: '3',
-      name: 'Vishnu Raj',
-      profilePicture: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face'
-    },
-    participants: [],
-    maxParticipants: 5,
-    scheduledDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    meetingPoint: 'Big Bazaar Gandhipuram',
-    status: 'planning',
-    category: 'home-decor',
-    budget: { min: 15000, max: 75000, currency: 'INR' },
-    area: 'Gandhipuram'
-  }
-]
-
-const TripCard = ({ trip, onEdit, onDelete, onReport, isAdmin, currentUserId }) => {
+const TripCard = ({ trip, onEdit, onDelete, onReport, isAdmin, currentUserId, currentUser, onTripUpdate }) => {
   const toast = useToast()
   const { isOpen, onOpen, onClose } = useDisclosure()
   const cancelRef = useRef()
   const [isJoined, setIsJoined] = useState(
-    trip.participants.some(p => p.id === currentUserId)
+    (trip.participants || []).some(p => (p.id || p) === currentUserId)
   )
+  const [isUpdating, setIsUpdating] = useState(false)
+  const isDemoTrip = trip.isDemoData || trip.id?.startsWith('demo-')
 
   const formatDate = (date) => {
     return new Intl.DateTimeFormat('en-IN', {
@@ -174,25 +101,70 @@ const TripCard = ({ trip, onEdit, onDelete, onReport, isAdmin, currentUserId }) 
     return colors[status] || 'gray'
   }
 
-  const handleJoinTrip = () => {
-    if (isJoined) {
-      setIsJoined(false)
+  const handleJoinTrip = async () => {
+    if (isDemoTrip) {
       toast({
-        title: 'Left trip successfully!',
-        description: `You have left "${trip.title}"`,
+        title: 'Demo Trip',
+        description: 'This is a demo trip. Create a real account to join actual shopping trips!',
         status: 'info',
-        duration: 3000,
+        duration: 4000,
         isClosable: true,
       })
-    } else {
-      setIsJoined(true)
+      return
+    }
+
+    if (!currentUser) {
       toast({
-        title: 'Trip joined successfully!',
-        description: `You have joined "${trip.title}"`,
-        status: 'success',
+        title: 'Please login',
+        description: 'You need to be logged in to join trips',
+        status: 'warning',
         duration: 3000,
         isClosable: true,
       })
+      return
+    }
+
+    setIsUpdating(true)
+    
+    try {
+      if (isJoined) {
+        // Leave trip
+        await tripsAPI.leaveTrip(trip.id, currentUserId)
+        setIsJoined(false)
+        toast({
+          title: 'Left trip successfully!',
+          description: `You have left "${trip.title}"`,
+          status: 'info',
+          duration: 3000,
+          isClosable: true,
+        })
+      } else {
+        // Join trip
+        await tripsAPI.joinTrip(trip.id, currentUserId, currentUser)
+        setIsJoined(true)
+        toast({
+          title: 'Trip joined successfully!',
+          description: `You have joined "${trip.title}"`,
+          status: 'success',
+          duration: 3000,
+          isClosable: true,
+        })
+      }
+      
+      // Callback to refresh trip data
+      if (onTripUpdate) {
+        onTripUpdate()
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update trip participation',
+        status: 'error',
+        duration: 4000,
+        isClosable: true,
+      })
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -218,9 +190,12 @@ const TripCard = ({ trip, onEdit, onDelete, onReport, isAdmin, currentUserId }) 
     })
   }
 
-  const fillPercentage = (trip.participants.length / trip.maxParticipants) * 100
+  // Handle both mock data and API data formats
+  const participants = trip.participants || []
+  const maxParticipants = trip.maxParticipants || trip.maxCapacity || 4
+  const fillPercentage = (participants.length / maxParticipants) * 100
   const isOwner = trip.organizer.id === currentUserId
-  const canJoin = trip.status === 'open' && trip.participants.length < trip.maxParticipants && !isOwner
+  const canJoin = trip.status === 'open' && participants.length < maxParticipants && !isOwner
 
   return (
     <>
@@ -229,13 +204,18 @@ const TripCard = ({ trip, onEdit, onDelete, onReport, isAdmin, currentUserId }) 
           <VStack align="stretch" spacing={4}>
             <HStack justify="space-between" align="start">
               <VStack align="start" spacing={1} flex={1}>
-                <HStack>
+                <HStack flexWrap="wrap">
                   <Badge colorScheme={getCategoryColor(trip.category)} variant="subtle">
                     {trip.category}
                   </Badge>
                   <Badge colorScheme={getStatusColor(trip.status)}>
                     {trip.status}
                   </Badge>
+                  {isDemoTrip && (
+                    <Badge colorScheme="orange" variant="solid">
+                      Demo
+                    </Badge>
+                  )}
                 </HStack>
                 <Heading size="md" noOfLines={2}>
                   {trip.title}
@@ -281,16 +261,16 @@ const TripCard = ({ trip, onEdit, onDelete, onReport, isAdmin, currentUserId }) 
 
             <VStack spacing={2} align="stretch">
               <HStack>
-                <Icon as={FiMapPin} color="gray.500" />
-                <Text fontSize="sm" color="gray.600" noOfLines={1}>
-                  {trip.meetingPoint}
+                <Icon as={FiCalendar} color="gray.500" />
+                <Text fontSize="sm" color="gray.600">
+                  {formatDate(trip.scheduledDate || trip.date)}
                 </Text>
               </HStack>
 
               <HStack>
-                <Icon as={FiCalendar} color="gray.500" />
-                <Text fontSize="sm" color="gray.600">
-                  {formatDate(trip.scheduledDate)}
+                <Icon as={FiMapPin} color="gray.500" />
+                <Text fontSize="sm" color="gray.600" noOfLines={1}>
+                  {trip.meetingPoint || trip.location?.meetingPoint}
                 </Text>
               </HStack>
 
@@ -299,7 +279,7 @@ const TripCard = ({ trip, onEdit, onDelete, onReport, isAdmin, currentUserId }) 
                   <HStack>
                     <Icon as={FiUsers} color="gray.500" />
                     <Text fontSize="sm" color="gray.600">
-                      {trip.participants.length}/{trip.maxParticipants} members
+                      {participants.length}/{maxParticipants} members
                     </Text>
                   </HStack>
                   <Text fontSize="xs" color="gray.500">
@@ -338,11 +318,11 @@ const TripCard = ({ trip, onEdit, onDelete, onReport, isAdmin, currentUserId }) 
                     </Text>
                   </VStack>
                 </HStack>
-                {trip.participants.length > 0 && (
+                {participants.length > 0 && (
                   <AvatarGroup size="sm" max={3}>
-                    {trip.participants.map(participant => (
+                    {trip.participants.map((participant, index) => (
                       <Avatar
-                        key={participant.id}
+                        key={participant.id || participant.name || index}
                         src={participant.avatar}
                         name={participant.name}
                       />
@@ -364,12 +344,14 @@ const TripCard = ({ trip, onEdit, onDelete, onReport, isAdmin, currentUserId }) 
                 {canJoin && (
                   <Button
                     size="sm"
-                    colorScheme={isJoined ? "red" : "brand"}
-                    variant={isJoined ? "outline" : "solid"}
+                    colorScheme={isDemoTrip ? "orange" : (isJoined ? "red" : "brand")}
+                    variant={isDemoTrip ? "outline" : (isJoined ? "outline" : "solid")}
                     onClick={handleJoinTrip}
+                    isLoading={isUpdating}
+                    loadingText={isJoined ? "Leaving..." : "Joining..."}
                     flex={1}
                   >
-                    {isJoined ? 'Leave' : 'Join Trip'}
+                    {isDemoTrip ? 'Demo Trip' : (isJoined ? 'Leave' : 'Join Trip')}
                   </Button>
                 )}
                 {isOwner && (
@@ -424,10 +406,133 @@ const ShoppingTrips = () => {
   const [categoryFilter, setCategoryFilter] = useState('')
   const [areaFilter, setAreaFilter] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
-  const [trips, setTrips] = useState(mockTrips)
+  const [activeTab, setActiveTab] = useState(0) // 0: All Trips, 1: My Trips, 2: Live, 3: Past
+  const toast = useToast()
 
   const isUserAdmin = isAdmin()
   const currentUserId = user?.id
+
+  // Debug current user
+  useEffect(() => {
+    console.log('Current user:', user)
+    console.log('Current user ID:', currentUserId)
+    console.log('Is admin:', isUserAdmin)
+  }, [user, currentUserId, isUserAdmin])
+
+  // Fetch all trips nearby
+  const { 
+    data: nearbyTripsData, 
+    isLoading: nearbyLoading, 
+    error: nearbyError,
+    refetch: refetchNearby 
+  } = useQuery({
+    queryKey: ['nearbyTrips', userLocation],
+    queryFn: () => tripsAPI.getNearbyTrips(
+      userLocation || { latitude: 11.0168, longitude: 76.9558 }, // Default to Coimbatore
+      { radius: 50 }
+    ),
+    enabled: !!userLocation,
+    retry: 2
+  })
+
+  // Fetch user's trips
+  const { 
+    data: userTripsData, 
+    isLoading: userTripsLoading, 
+    error: userTripsError,
+    refetch: refetchUserTrips 
+  } = useQuery({
+    queryKey: ['userTrips', currentUserId],
+    queryFn: () => {
+      console.log('Fetching user trips for userId:', currentUserId)
+      return tripsAPI.getUserTrips(currentUserId)
+    },
+    enabled: !!user && !!currentUserId,
+    retry: 2
+  })
+
+  // Debug user trips data
+  useEffect(() => {
+    if (userTripsData) {
+      console.log('User trips data:', userTripsData)
+      console.log('User trips count:', userTripsData?.data?.trips?.length || 0)
+    }
+  }, [userTripsData])
+
+  // Fetch live trips
+  const { 
+    data: liveTripsData, 
+    isLoading: liveLoading, 
+    error: liveError,
+    refetch: refetchLive 
+  } = useQuery({
+    queryKey: ['liveTrips'],
+    queryFn: () => tripsAPI.getLiveTrips(),
+    enabled: !!user,
+    retry: 2
+  })
+
+  // Fetch past trips
+  const { 
+    data: pastTripsData, 
+    isLoading: pastLoading, 
+    error: pastError,
+    refetch: refetchPast 
+  } = useQuery({
+    queryKey: ['pastTrips'],
+    queryFn: () => tripsAPI.getPastTrips(),
+    enabled: !!user,
+    retry: 2
+  })
+
+  // Get current trips based on active tab
+  const getCurrentTrips = () => {
+    switch (activeTab) {
+      case 0: // All Trips
+        return nearbyTripsData?.data?.trips || []
+      case 1: // My Trips
+        return userTripsData?.data?.trips || []
+      case 2: // Live Trips
+        return liveTripsData?.data?.trips || []
+      case 3: // Past Trips
+        return pastTripsData?.data?.trips || []
+      default:
+        return []
+    }
+  }
+
+  const getCurrentLoading = () => {
+    switch (activeTab) {
+      case 0: return nearbyLoading
+      case 1: return userTripsLoading
+      case 2: return liveLoading
+      case 3: return pastLoading
+      default: return false
+    }
+  }
+
+  const getCurrentError = () => {
+    switch (activeTab) {
+      case 0: return nearbyError
+      case 1: return userTripsError
+      case 2: return liveError
+      case 3: return pastError
+      default: return null
+    }
+  }
+
+  const refetchCurrentData = () => {
+    switch (activeTab) {
+      case 0: refetchNearby(); break
+      case 1: refetchUserTrips(); break
+      case 2: refetchLive(); break
+      case 3: refetchPast(); break
+    }
+  }
+
+  const trips = getCurrentTrips()
+  const isLoading = getCurrentLoading()
+  const error = getCurrentError()
 
   useEffect(() => {
     // Get user location
@@ -452,33 +557,73 @@ const ShoppingTrips = () => {
   }, [])
 
   const filteredTrips = trips.filter(trip => {
-    const matchesSearch = trip.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         trip.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         trip.meetingPoint.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         trip.organizer.name.toLowerCase().includes(searchQuery.toLowerCase())
+    if (!trip) return false
+    
+    const matchesSearch = trip.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         trip.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         trip.meetingPoint?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         trip.organizer?.name?.toLowerCase().includes(searchQuery.toLowerCase())
     
     const matchesCategory = !categoryFilter || trip.category === categoryFilter
-    const matchesArea = !areaFilter || trip.area === areaFilter
+    const matchesArea = !areaFilter || trip.area === areaFilter || trip.location?.area === areaFilter
     const matchesStatus = !statusFilter || trip.status === statusFilter
 
     return matchesSearch && matchesCategory && matchesArea && matchesStatus
   })
 
-  const categories = [...new Set(trips.map(trip => trip.category))]
-  const areas = [...new Set(trips.map(trip => trip.area))]
-  const statuses = [...new Set(trips.map(trip => trip.status))]
+  const categories = [...new Set(trips.map(trip => trip.category).filter(Boolean))]
+  const areas = [...new Set(trips.map(trip => trip.area || trip.location?.area).filter(Boolean))]
+  const statuses = [...new Set(trips.map(trip => trip.status).filter(Boolean))]
 
   const handleEdit = (trip) => {
     // Navigate to edit page or open edit modal
+    toast({
+      title: 'Edit functionality',
+      description: 'Edit trip functionality coming soon!',
+      status: 'info',
+      duration: 3000,
+    })
   }
 
-  const handleDelete = (tripId) => {
-    setTrips(trips.filter(trip => trip.id !== tripId))
+  const handleDelete = async (tripId) => {
+    try {
+      await tripsAPI.cancelTrip(tripId)
+      toast({
+        title: 'Trip deleted',
+        description: 'Trip has been successfully deleted',
+        status: 'success',
+        duration: 3000,
+      })
+      refetchCurrentData()
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete trip',
+        status: 'error',
+        duration: 3000,
+      })
+    }
   }
 
   const handleReport = (tripId) => {
-    // Handle trip reporting logic
+    toast({
+      title: 'Trip reported',
+      description: 'Thank you for reporting. We will review this trip.',
+      status: 'info',
+      duration: 3000,
+    })
   }
+
+  const getTabCounts = () => {
+    return {
+      all: nearbyTripsData?.data?.trips?.length || 0,
+      my: userTripsData?.data?.trips?.length || 0,
+      live: liveTripsData?.data?.trips?.length || 0,
+      past: pastTripsData?.data?.trips?.length || 0
+    }
+  }
+
+  const tabCounts = getTabCounts()
 
   return (
     <Container maxW="7xl" py={8}>
@@ -486,7 +631,7 @@ const ShoppingTrips = () => {
         {/* Header */}
         <HStack justify="space-between" align="center">
           <VStack align="start" spacing={1}>
-            <Heading size="lg">Shopping Trips in Coimbatore</Heading>
+            <Heading size="lg">Shopping Trips</Heading>
             <Text color="gray.600">
               Discover and join shopping trips in your area
             </Text>
@@ -501,128 +646,169 @@ const ShoppingTrips = () => {
           </Button>
         </HStack>
 
-        {/* Filters */}
-        <Card>
-          <CardBody>
-            <VStack spacing={4}>
-              <InputGroup>
-                <InputLeftElement>
-                  <Icon as={FiSearch} color="gray.400" />
-                </InputLeftElement>
-                <Input
-                  placeholder="Search trips, organizers, or locations..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </InputGroup>
-              
-              <Flex wrap="wrap" gap={4} w="full">
-                <Select
-                  placeholder="All Categories"
-                  value={categoryFilter}
-                  onChange={(e) => setCategoryFilter(e.target.value)}
-                  maxW="200px"
-                >
-                  {categories.map(category => (
-                    <option key={category} value={category}>
-                      {category.charAt(0).toUpperCase() + category.slice(1)}
-                    </option>
-                  ))}
-                </Select>
-                
-                <Select
-                  placeholder="All Areas"
-                  value={areaFilter}
-                  onChange={(e) => setAreaFilter(e.target.value)}
-                  maxW="200px"
-                >
-                  {areas.map(area => (
-                    <option key={area} value={area}>{area}</option>
-                  ))}
-                </Select>
+        {/* Tab Navigation */}
+        <Tabs index={activeTab} onChange={setActiveTab} variant="enclosed">
+          <TabList>
+            <Tab>All Trips ({tabCounts.all})</Tab>
+            <Tab>My Trips ({tabCounts.my})</Tab>
+            <Tab>Live Trips ({tabCounts.live})</Tab>
+            <Tab>Past Trips ({tabCounts.past})</Tab>
+          </TabList>
 
-                <Select
-                  placeholder="All Status"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  maxW="200px"
-                >
-                  {statuses.map(status => (
-                    <option key={status} value={status}>
-                      {status.charAt(0).toUpperCase() + status.slice(1)}
-                    </option>
-                  ))}
-                </Select>
-                
-                <Button
-                  leftIcon={<Icon as={FiFilter} />}
-                  variant="outline"
-                  onClick={() => {
-                    setSearchQuery('')
-                    setCategoryFilter('')
-                    setAreaFilter('')
-                    setStatusFilter('')
-                  }}
-                >
-                  Clear
-                </Button>
-              </Flex>
-            </VStack>
-          </CardBody>
-        </Card>
+          <TabPanels>
+            {[0, 1, 2, 3].map((tabIndex) => (
+              <TabPanel key={tabIndex} px={0}>
+                {/* Error State */}
+                {error && (
+                  <Alert status="error" mb={4}>
+                    <AlertIcon />
+                    {error.message || 'Failed to load trips. Please try again.'}
+                    <Button 
+                      ml="auto" 
+                      size="sm" 
+                      onClick={refetchCurrentData}
+                    >
+                      Retry
+                    </Button>
+                  </Alert>
+                )}
 
-        {/* Results count */}
-        <HStack justify="space-between" align="center">
-          <Text color="gray.600">
-            Showing {filteredTrips.length} of {trips.length} trips
-          </Text>
-          <HStack spacing={2}>
-            <Text fontSize="sm" color="gray.500">Sort by:</Text>
-            <Select size="sm" w="auto">
-              <option value="date">Date</option>
-              <option value="participants">Participants</option>
-              <option value="status">Status</option>
-            </Select>
-          </HStack>
-        </HStack>
+                {/* Filters */}
+                <Card mb={6}>
+                  <CardBody>
+                    <VStack spacing={4}>
+                      <InputGroup maxW="400px">
+                        <InputLeftElement pointerEvents="none">
+                          <Icon as={FiSearch} color="gray.400" />
+                        </InputLeftElement>
+                        <Input
+                          placeholder="Search trips..."
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                      </InputGroup>
 
-        {/* Trips Grid */}
-        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
-          {filteredTrips.map((trip) => (
-            <TripCard 
-              key={trip.id} 
-              trip={trip}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onReport={handleReport}
-              isAdmin={isUserAdmin}
-              currentUserId={currentUserId}
-            />
-          ))}
-        </SimpleGrid>
+                      <Flex wrap="wrap" gap={4} justify="center">
+                        <Select
+                          placeholder="All Categories"
+                          value={categoryFilter}
+                          onChange={(e) => setCategoryFilter(e.target.value)}
+                          maxW="200px"
+                        >
+                          {categories.map(category => (
+                            <option key={category} value={category}>
+                              {category.charAt(0).toUpperCase() + category.slice(1)}
+                            </option>
+                          ))}
+                        </Select>
+                        
+                        <Select
+                          placeholder="All Areas"
+                          value={areaFilter}
+                          onChange={(e) => setAreaFilter(e.target.value)}
+                          maxW="200px"
+                        >
+                          {areas.map(area => (
+                            <option key={area} value={area}>{area}</option>
+                          ))}
+                        </Select>
+                        
+                        <Select
+                          placeholder="All Status"
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          maxW="200px"
+                        >
+                          {statuses.map(status => (
+                            <option key={status} value={status}>
+                              {status.charAt(0).toUpperCase() + status.slice(1)}
+                            </option>
+                          ))}
+                        </Select>
+                      </Flex>
+                    </VStack>
+                  </CardBody>
+                </Card>
 
-        {/* Empty state */}
-        {filteredTrips.length === 0 && (
-          <Card py={12}>
-            <CardBody textAlign="center">
-              <VStack spacing={4}>
-                <Icon as={FiCalendar} boxSize={12} color="gray.400" />
-                <Heading size="md" color="gray.500">No trips found</Heading>
-                <Text color="gray.500">
-                  Try adjusting your search criteria or create a new trip
-                </Text>
-                <Button
-                  as={RouterLink}
-                  to="/trips/create"
-                  colorScheme="brand"
-                  leftIcon={<Icon as={FiPlus} />}
-                >
-                  Create Your First Trip
-                </Button>
-              </VStack>
-            </CardBody>
-          </Card>
-        )}
+                {/* Demo Data Notice */}
+                {tabIndex === 0 && filteredTrips.some(trip => trip.isDemoData || trip.id?.startsWith('demo-')) && (
+                  <Alert status="info" mb={4}>
+                    <AlertIcon />
+                    <VStack align="start" spacing={1} flex={1}>
+                      <Text fontWeight="semibold">Demo Content</Text>
+                      <Text fontSize="sm">
+                        Some trips marked with "Demo" badge are sample trips to showcase the platform. 
+                        Create a real account to join actual shopping trips in your area!
+                      </Text>
+                    </VStack>
+                  </Alert>
+                )}
+
+                {/* Loading State */}
+                {isLoading && (
+                  <Flex justify="center" py={12}>
+                    <VStack spacing={4}>
+                      <Spinner size="xl" color="brand.500" />
+                      <Text color="gray.500">Loading trips...</Text>
+                    </VStack>
+                  </Flex>
+                )}
+
+                {/* Trips Grid */}
+                {!isLoading && (
+                  <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={6}>
+                    {filteredTrips.map((trip, index) => (
+                      <TripCard
+                        key={trip.id || `trip-${index}`}
+                        trip={trip}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                        onReport={handleReport}
+                        isAdmin={isUserAdmin}
+                        currentUserId={currentUserId}
+                        currentUser={user}
+                        onTripUpdate={() => {
+                          refetchNearby()
+                          refetchUserTrips()
+                          refetchLive()
+                          refetchPast()
+                        }}
+                      />
+                    ))}
+                  </SimpleGrid>
+                )}
+
+                {/* Empty state */}
+                {!isLoading && filteredTrips.length === 0 && (
+                  <Card py={12}>
+                    <CardBody textAlign="center">
+                      <VStack spacing={4}>
+                        <Icon as={FiCalendar} boxSize={12} color="gray.400" />
+                        <Heading size="md" color="gray.500">
+                          {trips.length === 0 ? 'No trips found' : 'No trips match your filters'}
+                        </Heading>
+                        <Text color="gray.500">
+                          {activeTab === 1 
+                            ? 'You haven\'t created or joined any trips yet. Create your first trip!'
+                            : 'Try adjusting your search criteria or create a new trip'
+                          }
+                        </Text>
+                        <Button
+                          as={RouterLink}
+                          to="/trips/create"
+                          colorScheme="brand"
+                          leftIcon={<Icon as={FiPlus} />}
+                        >
+                          Create Your First Trip
+                        </Button>
+                      </VStack>
+                    </CardBody>
+                  </Card>
+                )}
+              </TabPanel>
+            ))}
+          </TabPanels>
+        </Tabs>
       </VStack>
     </Container>
   )

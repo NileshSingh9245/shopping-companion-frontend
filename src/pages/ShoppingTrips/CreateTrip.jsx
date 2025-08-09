@@ -44,6 +44,7 @@ import {
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
+import tripsAPI from '../../services/enhancedTripsAPI'
 
 const CreateTrip = () => {
   const navigate = useNavigate()
@@ -57,7 +58,8 @@ const CreateTrip = () => {
     date: '',
     time: '',
     maxMembers: 4,
-    budget: 'mid-range',
+    budget: null,
+    budgetRange: '',
     categories: [],
     isPublic: true,
     allowJoinRequests: true,
@@ -97,10 +99,47 @@ const CreateTrip = () => {
   ]
 
   const budgetOptions = [
-    { value: 'budget', label: 'Budget (₹500 - ₹2,000)', color: 'green' },
-    { value: 'mid-range', label: 'Mid-range (₹2,000 - ₹10,000)', color: 'blue' },
-    { value: 'premium', label: 'Premium (₹10,000+)', color: 'purple' }
+    { 
+      value: 'budget', 
+      label: 'Budget (₹500 - ₹2,000)', 
+      color: 'green',
+      min: 500,
+      max: 2000
+    },
+    { 
+      value: 'mid-range', 
+      label: 'Mid-range (₹2,000 - ₹10,000)', 
+      color: 'blue',
+      min: 2000,
+      max: 10000
+    },
+    { 
+      value: 'premium', 
+      label: 'Premium (₹10,000+)', 
+      color: 'purple',
+      min: 10000,
+      max: 50000
+    }
   ]
+
+  const handleBudgetSelect = (option) => {
+    setFormData(prev => ({
+      ...prev,
+      budgetRange: option.value,
+      budget: {
+        min: option.min,
+        max: option.max
+      }
+    }))
+    
+    // Clear budget error if exists
+    if (errors.budget) {
+      setErrors(prev => ({
+        ...prev,
+        budget: ''
+      }))
+    }
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -184,6 +223,10 @@ const CreateTrip = () => {
       newErrors.categories = 'Select at least one shopping category'
     }
 
+    if (!formData.budgetRange) {
+      newErrors.budget = 'Please select a budget range'
+    }
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -205,25 +248,31 @@ const CreateTrip = () => {
     setIsLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      const newTrip = {
-        id: Date.now().toString(),
+      // Prepare trip data
+      const tripData = {
         ...formData,
-        organizer: {
-          id: user.id,
-          name: user.name,
-          avatar: user.avatar
+        scheduledDate: formData.date,
+        meetingPoint: formData.meetingPoint,
+        maxParticipants: formData.maxParticipants,
+        estimatedDuration: formData.duration,
+        budget: {
+          min: formData.budget?.min || 0,
+          max: formData.budget?.max || 0,
+          currency: 'INR'
         },
-        members: [user],
-        status: 'upcoming',
-        createdAt: new Date().toISOString(),
-        joinRequests: []
+        coordinates: {
+          latitude: 11.0168, // Default to Coimbatore
+          longitude: 76.9558
+        },
+        status: 'open',
+        visibility: formData.isPrivate ? 'private' : 'public',
+        participants: [],
+        features: formData.features || [],
+        languages: formData.languages || ['English']
       }
 
-      // In a real app, this would save to the backend
-      // Trip created successfully
+      // Create trip using enhanced API
+      const result = await tripsAPI.createTrip(tripData, user.id, user)
 
       toast({
         title: 'Trip Created Successfully!',
@@ -233,13 +282,14 @@ const CreateTrip = () => {
         isClosable: true,
       })
 
-      // Navigate to trip details or trips list
+      // Navigate to trips list
       navigate('/trips')
       
     } catch (error) {
+      console.error('Error creating trip:', error)
       toast({
         title: 'Error Creating Trip',
-        description: 'Something went wrong. Please try again.',
+        description: error.message || 'Something went wrong. Please try again.',
         status: 'error',
         duration: 3000,
         isClosable: true,
@@ -466,10 +516,14 @@ const CreateTrip = () => {
                       {budgetOptions.map(option => (
                         <Card
                           key={option.value}
-                          variant={formData.budget === option.value ? 'solid' : 'outline'}
-                          colorScheme={formData.budget === option.value ? option.color : 'gray'}
+                          variant={formData.budgetRange === option.value ? 'filled' : 'outline'}
+                          bg={formData.budgetRange === option.value ? `${option.color}.50` : 'white'}
+                          borderColor={formData.budgetRange === option.value ? `${option.color}.500` : 'gray.200'}
+                          borderWidth={formData.budgetRange === option.value ? '2px' : '1px'}
                           cursor="pointer"
-                          onClick={() => handleInputChange({ target: { name: 'budget', value: option.value }})}
+                          onClick={() => handleBudgetSelect(option)}
+                          _hover={{ shadow: 'md', transform: 'translateY(-1px)' }}
+                          transition="all 0.2s"
                         >
                           <CardBody py={3} textAlign="center">
                             <VStack spacing={1}>
@@ -485,6 +539,7 @@ const CreateTrip = () => {
                         </Card>
                       ))}
                     </SimpleGrid>
+                    {errors.budget && <Text color="red.500" fontSize="sm">{errors.budget}</Text>}
                   </FormControl>
 
                   <FormControl isInvalid={errors.categories}>

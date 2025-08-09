@@ -255,7 +255,7 @@ const Home = () => {
       </Box>
 
       {/* Stats Section */}
-      <Box py={16} bg="gray.50">
+      <Box id="stats-section" py={16} bg="gray.50">
         <Container maxW="7xl">
           <SimpleGrid columns={{ base: 2, md: 4 }} spacing={8} textAlign="center">
             <StatCard number="5,000+" label="Active Users" />
@@ -267,7 +267,7 @@ const Home = () => {
       </Box>
 
       {/* Featured Stores Section */}
-      <Box py={16}>
+      <Box id="stores-section" py={16}>
         <Container maxW="7xl">
           <VStack spacing={8}>
             <VStack spacing={4} textAlign="center">
@@ -291,7 +291,7 @@ const Home = () => {
       </Box>
 
       {/* Active Trips Section */}
-      <Box py={16} bg="gray.50">
+      <Box id="trips-section" py={16} bg="gray.50">
         <Container maxW="7xl">
           <VStack spacing={8}>
             <VStack spacing={4} textAlign="center">
@@ -315,7 +315,7 @@ const Home = () => {
       </Box>
 
       {/* Features Section */}
-      <Box py={20}>
+      <Box id="features-section" py={20}>
         <Container maxW="7xl">
           <VStack spacing={16}>
             <VStack spacing={4} textAlign="center">
@@ -357,7 +357,7 @@ const Home = () => {
       </Box>
 
       {/* CTA Section */}
-      <Box py={20} bg="brand.500" color="white">
+      <Box id="cta-section" py={20} bg="brand.500" color="white">
         <Container maxW="7xl">
           <VStack spacing={8} textAlign="center">
             <Heading size="xl">Ready to Start Shopping Together?</Heading>
